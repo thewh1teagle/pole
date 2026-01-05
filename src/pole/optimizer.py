@@ -51,7 +51,8 @@ class PromptOptimizer:
         loss_threshold: Optional[float] = None,
         top_k: int = DEFAULT_TOP_K,
         output_dir: str = DEFAULT_OUTPUT_DIR,
-        reporter: Optional[ProgressReporter] = None
+        reporter: Optional[ProgressReporter] = None,
+        diversity_frequency: int = 3
     ):
         """
         Args:
@@ -64,6 +65,7 @@ class PromptOptimizer:
             top_k: Number of best prompts to track
             output_dir: Directory to save optimization history
             reporter: Optional progress reporter (silent if None)
+            diversity_frequency: Inject diversity every N iterations (0 = disabled)
         """
         self.model = model
         self.loss_fn = loss_fn
@@ -73,6 +75,7 @@ class PromptOptimizer:
         self.loss_threshold = loss_threshold
         self.output_dir = output_dir
         self.reporter = reporter
+        self.diversity_frequency = diversity_frequency
 
         self.history = OptimizationHistory(top_k=top_k)
 
@@ -158,6 +161,14 @@ class PromptOptimizer:
                 "best_loss": best_loss
             }
             variations = self.mutator.mutate(current_prompt, context)
+
+            # QUICK WIN: Every N iterations, add variation from initial prompt
+            if (self.diversity_frequency > 0 and
+                iteration % self.diversity_frequency == 0 and
+                iteration > 1):
+                restart_vars = self.mutator.mutate(initial_prompt, context)
+                if restart_vars:
+                    variations.append(restart_vars[0])
 
             if self.reporter:
                 self.reporter.on_generating_variations(len(variations))
