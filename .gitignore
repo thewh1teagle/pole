@@ -1,7 +1,10 @@
-venv/
-.venv/
 __pycache__/
-.DS_Store
-output/
-gt.csv
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
 *.csv
+output/
