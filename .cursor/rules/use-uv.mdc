@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+
+Use uv to manage dependencies and run scripts.
+When writing doc how to run the script, also write with uv.
