@@ -36,12 +36,22 @@ python examples/sentiment/optimize_sentiment.py
 **`g2p/`** - Advanced Hebrew phoneme conversion
 
 - Real-world use case
-- Larger dataset
+- Uses fine-tuned model (gemma3-g2p)
 - Custom loss function (phoneme error rate)
 - Shows domain-specific optimization
 
+**Files:**
+- `base_prompt.py` - Initial prompt
+- `optimize_g2p.py` - Optimization script
+- `gemma3.py` - Original baseline script
+
 ```bash
-python examples/g2p/optimize_g2p.py
+# Download test data first
+cd examples/g2p
+wget https://raw.githubusercontent.com/thewh1teagle/heb-g2p-benchmark/refs/heads/gemma3-pro/gt.csv
+
+# Run optimization
+uv run examples/g2p/optimize_g2p.py
 ```
 
 ## Example Comparison

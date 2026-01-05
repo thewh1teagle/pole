@@ -41,7 +41,8 @@ class PromptOptimizer:
         patience: int = 5,
         loss_threshold: Optional[float] = None,
         top_k: int = 5,
-        output_dir: str = "output/"
+        output_dir: str = "output/",
+        verbose: bool = True
     ):
         """
         Args:
@@ -53,6 +54,7 @@ class PromptOptimizer:
             loss_threshold: Stop if loss drops below this value (optional)
             top_k: Number of best prompts to track
             output_dir: Directory to save optimization history
+            verbose: Print progress during optimization
         """
         self.model = model
         self.loss_fn = loss_fn
@@ -61,6 +63,7 @@ class PromptOptimizer:
         self.patience = patience
         self.loss_threshold = loss_threshold
         self.output_dir = output_dir
+        self.verbose = verbose
         
         self.history = OptimizationHistory(top_k=top_k)
     
@@ -81,6 +84,9 @@ class PromptOptimizer:
         """
         total_loss = 0.0
         
+        if self.verbose:
+            print(f"  Evaluating on {len(test_cases)} test cases...", end=" ", flush=True)
+        
         for input_text, expected in test_cases:
             # Get model output
             predicted = self.model(prompt, input_text)
@@ -89,7 +95,12 @@ class PromptOptimizer:
             loss = self.loss_fn(predicted, expected)
             total_loss += loss
         
-        return total_loss / len(test_cases)
+        avg_loss = total_loss / len(test_cases)
+        
+        if self.verbose:
+            print(f"done (avg loss: {avg_loss:.4f})", flush=True)
+        
+        return avg_loss
     
     def optimize(
         self,
@@ -112,11 +123,20 @@ class PromptOptimizer:
         # Track initial state
         self.history.add(0, current_prompt, current_loss)
         
+        if self.verbose:
+            print(f"\nIteration 0 [Initial]: loss = {current_loss:.4f}", flush=True)
+        
         best_prompt = current_prompt
         best_loss = current_loss
         patience_counter = 0
         
         for iteration in range(1, self.max_iterations + 1):
+            if self.verbose:
+                print(f"\n{'='*60}", flush=True)
+                print(f"Iteration {iteration}/{self.max_iterations}", flush=True)
+                print(f"Current best loss: {best_loss:.4f} | Patience: {patience_counter}/{self.patience}", flush=True)
+                print("Generating prompt variations...", end=" ", flush=True)
+            
             # Generate variations
             context = {
                 "iteration": iteration,
@@ -125,11 +145,26 @@ class PromptOptimizer:
             }
             variations = self.mutator.mutate(current_prompt, context)
             
+            if self.verbose:
+                print(f"done ({len(variations)} variations)", flush=True)
+            
             # Evaluate each variation
             improved = False
-            for variant in variations:
+            for i, variant in enumerate(variations, 1):
+                if self.verbose:
+                    print(f"  Variation {i}/{len(variations)}:", flush=True)
+                    # Show preview of the prompt
+                    preview = variant[:150].replace('\n', ' ')
+                    if len(variant) > 150:
+                        preview += "..."
+                    print(f"    Prompt: \"{preview}\"", flush=True)
+                
                 variant_loss = self._evaluate_prompt(variant, test_cases)
                 self.history.add(iteration, variant, variant_loss)
+                
+                if self.verbose:
+                    improvement = "✓ NEW BEST!" if variant_loss < best_loss else ""
+                    print(f"    → Final loss: {variant_loss:.4f} {improvement}", flush=True)
                 
                 # Check if this is better
                 if variant_loss < best_loss:
@@ -143,9 +178,13 @@ class PromptOptimizer:
             
             if not improved:
                 patience_counter += 1
+                if self.verbose:
+                    print(f"  No improvement this iteration (patience: {patience_counter}/{self.patience})", flush=True)
             
             # Check convergence conditions
             if self.loss_threshold is not None and best_loss < self.loss_threshold:
+                if self.verbose:
+                    print(f"\n✓ Converged: loss {best_loss:.4f} < threshold {self.loss_threshold}")
                 self.history.save(self.output_dir)
                 return OptimizationResult(
                     best_prompt=best_prompt,
@@ -156,6 +195,8 @@ class PromptOptimizer:
                 )
             
             if patience_counter >= self.patience:
+                if self.verbose:
+                    print(f"\n✓ Converged: No improvement for {self.patience} iterations")
                 self.history.save(self.output_dir)
                 return OptimizationResult(
                     best_prompt=best_prompt,
@@ -166,6 +207,8 @@ class PromptOptimizer:
                 )
         
         # Max iterations reached
+        if self.verbose:
+            print(f"\n✓ Max iterations ({self.max_iterations}) reached")
         self.history.save(self.output_dir)
         return OptimizationResult(
             best_prompt=best_prompt,

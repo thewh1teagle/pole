@@ -77,29 +77,30 @@ class AgentMutator:
         loss_info = ""
         if current_loss is not None and best_loss is not None:
             if current_loss > best_loss:
-                loss_info = f"\n\nCurrent performance is worse. Loss: {current_loss:.3f} (best: {best_loss:.3f})"
+                loss_info = f"\nCurrent error rate: {current_loss:.3f} (best: {best_loss:.3f}) - Need significant improvement!"
             else:
-                loss_info = f"\n\nCurrent performance. Loss: {current_loss:.3f}"
+                loss_info = f"\nCurrent error rate: {current_loss:.3f}"
         
-        instruction = f"""You are a prompt engineering expert. Generate {self.num_variations} improved variations of the following prompt.
+        instruction = f"""You are a prompt engineering expert. Your task is to improve this prompt by generating {self.num_variations} better variations.
 
-ORIGINAL PROMPT:
-"{prompt}"
+CURRENT PROMPT (preserve the core task and format):
+\"\"\"
+{prompt}
+\"\"\"
+{loss_info}
 
-TASK: Create {self.num_variations} complete, ready-to-use prompt variations. Each should:
-- Be a complete prompt (not a description or meta-comment)
-- Keep the same core task
-- Add clarifications, structure, or instructions to improve results
-- Be different from the others
+TASK: Generate {self.num_variations} COMPLETE, IMPROVED versions of the above prompt.
 
-IMPORTANT: Output ONLY the actual prompts, one per line. Do NOT explain, number, or describe them.
+Requirements:
+- Keep the EXACT same task/goal
+- Keep the same output format requirements  
+- Add helpful clarifications or examples
+- Improve wording for clarity
+- Make small, focused improvements (don't change the whole approach)
 
-EXAMPLE FORMAT:
-Classify sentiment of the text as positive, negative, or neutral. Be precise.
-Determine if the following text expresses positive, negative, or neutral sentiment.
-Analyze the sentiment: output only positive, negative, or neutral.
-
-NOW GENERATE {self.num_variations} VARIATIONS:"""
+Output format: Write each complete prompt on its own, separated by blank lines.
+Do NOT add labels like "Variation 1:" or explanations.
+Output ONLY the {self.num_variations} complete prompts."""
         
         return instruction
     
@@ -107,32 +108,54 @@ NOW GENERATE {self.num_variations} VARIATIONS:"""
         """Call the mutator agent to generate variations."""
         response = self.mutator_fn(instruction)
         
-        # Parse variations - each non-trivial line is a variation
+        # Split by double newlines to get distinct prompts
         variations = []
-        lines = response.split('\n')
+        parts = response.split('\n\n')
         
-        for line in lines:
-            line = line.strip()
+        for part in parts:
+            part = part.strip()
             
-            # Skip empty lines
-            if not line:
+            # Skip empty or too short
+            if not part or len(part) < 20:
                 continue
             
-            # Skip lines that are clearly not prompts (too short, or meta-comments)
-            if len(line) < 15:
-                continue
-            
-            # Skip numbered prefixes like "1.", "2.", "VARIATION:", etc
-            cleaned = line
             # Remove common prefixes
-            for prefix in ['VARIATION:', 'VARIATION', '1.', '2.', '3.', '1)', '2)', '3)', '-', '*', '•']:
-                if cleaned.startswith(prefix):
-                    cleaned = cleaned[len(prefix):].strip()
+            for prefix in ['VARIATION:', 'VARIATION', '1.', '2.', '3.', '1)', '2)', '3)', 
+                          'Prompt:', 'Prompt 1:', 'Prompt 2:', 'Prompt 3:', 
+                          '**Variation', '*Variation', 'Example:']:
+                if part.startswith(prefix):
+                    # Find end of prefix line
+                    newline_idx = part.find('\n')
+                    if newline_idx != -1:
+                        part = part[newline_idx+1:].strip()
+                    else:
+                        part = part[len(prefix):].strip()
                     break
             
-            # If it's substantial, keep it
-            if cleaned and len(cleaned) > 15:
-                variations.append(cleaned)
+            # Clean markdown formatting
+            part = part.replace('**', '').replace('*', '').replace('```', '')
+            
+            if part and len(part) > 20:
+                variations.append(part)
+        
+        # Fallback: split by single newlines if nothing found
+        if not variations:
+            lines = response.split('\n')
+            current = []
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    if current:
+                        var = '\n'.join(current).strip()
+                        if len(var) > 50:
+                            variations.append(var)
+                        current = []
+                else:
+                    current.append(line)
+            if current:
+                var = '\n'.join(current).strip()
+                if len(var) > 50:
+                    variations.append(var)
         
         return variations[:self.num_variations * 2]  # Generate extra for filtering
     

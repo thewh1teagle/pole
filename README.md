@@ -31,6 +31,10 @@ def my_model(prompt: str, input_text: str) -> str:
 # 2. Define your loss function
 def loss_fn(predicted: str, expected: str) -> float:
     # Return a number (smaller = better)
+    # Use industry-standard metrics:
+    # - jiwer.cer() for character/phoneme comparison
+    # - jiwer.wer() for word comparison
+    # - Custom business metrics
     return compute_error(predicted, expected)
 
 # 3. Create optimizer
@@ -57,8 +61,27 @@ print(result.best_loss)
 ## Examples
 
 See `examples/` directory:
-- `basic_example.py` - Minimal placeholder example
-- `g2p/` - Real-world G2P (grapheme-to-phoneme) optimization with Ollama
+- **`basic_example.py`** - Minimal placeholder example (no dependencies)
+- **`sentiment/`** - Sentiment classification with Ollama (real optimization)
+- **`g2p/`** - Hebrew→IPA phoneme conversion (domain-specific, advanced)
+
+### Quick Demo
+
+```bash
+# 1. Install dependencies
+uv sync
+uv pip install ollama jiwer
+
+# 2. Run basic example (no LLM needed)
+uv run examples/basic_example.py
+
+# 3. Run sentiment optimization (requires Ollama)
+ollama pull gemma3:270m
+uv run examples/sentiment/optimize_sentiment.py
+
+# 4. Test G2P with mock data (no fine-tuned model needed)
+uv run examples/g2p/test_mock.py
+```
 
 ## Architecture
 
