@@ -2,6 +2,8 @@
 
 Prompt optimization via iterative mutation and evaluation.
 
+Trainer for prompts, not weights. Finds better prompts through search instead of gradient descent. Plug in your mutation strategy: heuristics, LLM agents, RAG, evolutionary algorithms, or web search.
+
 ## Usage
 
 See `examples/` directory for complete working examples:
