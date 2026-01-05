@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from .mutator import PromptMutator, DefaultMutator
+from .mutators.base_mutator import PromptMutator
+from .mutators.simple_mutator import SimpleMutator
 from .history import OptimizationHistory
 from .reporter import ProgressReporter
 from .constants.config import (
@@ -66,7 +67,7 @@ class PromptOptimizer:
         """
         self.model = model
         self.loss_fn = loss_fn
-        self.mutator = mutator or DefaultMutator()
+        self.mutator = mutator or SimpleMutator()
         self.max_iterations = max_iterations
         self.patience = patience
         self.loss_threshold = loss_threshold

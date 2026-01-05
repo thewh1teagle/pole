@@ -1,10 +1,10 @@
 """Agent-based prompt mutation with verification."""
 
 from typing import Callable, Optional
-from .constants.config import DEFAULT_NUM_VARIATIONS
-from .constants.prompts import FALLBACK_VARIATION
-from .agents.mutator_agent import MutatorAgent
-from .agents.verifier_agent import VerifierAgent
+from ..constants.config import DEFAULT_NUM_VARIATIONS
+from ..constants.prompts import FALLBACK_VARIATION
+from ..agents.mutator_agent import MutatorAgent
+from ..agents.verifier_agent import VerifierAgent
 
 
 class AgentMutator:

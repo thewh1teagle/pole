@@ -1,33 +1,17 @@
-"""Prompt mutation strategies."""
+"""Simple deterministic prompt mutator."""
 
-from typing import Protocol
-from .constants.config import DEFAULT_NUM_VARIATIONS
-from .constants.mutation_strategies import DEFAULT_MUTATION_STRATEGIES
-
-
-class PromptMutator(Protocol):
-    """Interface for prompt mutation strategies."""
-
-    def mutate(self, prompt: str, context: dict) -> list[str]:
-        """
-        Generate variations of the given prompt.
-
-        Args:
-            prompt: The current prompt string
-            context: Dictionary with metadata (iteration, loss, etc.)
-
-        Returns:
-            List of mutated prompt candidates
-        """
-        ...
+from ..constants.config import DEFAULT_NUM_VARIATIONS
+from ..constants.mutation_strategies import DEFAULT_MUTATION_STRATEGIES
 
 
-class DefaultMutator:
+class SimpleMutator:
     """
     Simple deterministic prompt mutator.
 
     Applies small, deterministic string edits to generate variations.
     No randomness - same prompt always produces same variations.
+
+    This is the default mutator when no custom mutator is provided.
     """
 
     def __init__(self, num_variations: int = DEFAULT_NUM_VARIATIONS):
@@ -53,3 +37,7 @@ class DefaultMutator:
         variations.append(simplified.strip())
 
         return variations[:self.num_variations]
+
+
+# Alias for backward compatibility
+DefaultMutator = SimpleMutator
