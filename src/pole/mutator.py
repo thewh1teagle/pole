@@ -1,7 +1,8 @@
 """Prompt mutation strategies."""
 
 from typing import Protocol
-from .constants import DEFAULT_NUM_VARIATIONS, DEFAULT_MUTATION_STRATEGIES
+from .constants.config import DEFAULT_NUM_VARIATIONS
+from .constants.mutation_strategies import DEFAULT_MUTATION_STRATEGIES
 
 
 class PromptMutator(Protocol):

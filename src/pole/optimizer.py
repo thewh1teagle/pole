@@ -6,7 +6,7 @@ from typing import Callable, Optional
 from .mutator import PromptMutator, DefaultMutator
 from .history import OptimizationHistory
 from .reporter import ProgressReporter
-from .constants import (
+from .constants.config import (
     DEFAULT_MAX_ITERATIONS,
     DEFAULT_PATIENCE,
     DEFAULT_TOP_K,

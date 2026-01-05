@@ -1,4 +1,4 @@
-"""Constants used throughout the library."""
+"""Configuration constants for the optimizer and mutators."""
 
 # Optimizer defaults
 DEFAULT_MAX_ITERATIONS = 20
@@ -14,11 +14,3 @@ PROMPT_PREVIEW_LENGTH = 150
 MIN_VARIATION_LENGTH = 20
 MIN_VIABLE_PROMPT_LENGTH = 5
 VARIATION_GENERATION_MULTIPLIER = 2
-
-# Default mutation strategies
-DEFAULT_MUTATION_STRATEGIES = [
-    "Be precise and concise.",
-    "Output format: plain text, no explanations.",
-    "Focus on accuracy.",
-    "Think step by step before responding.",
-]
