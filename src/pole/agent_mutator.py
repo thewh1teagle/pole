@@ -81,26 +81,25 @@ class AgentMutator:
             else:
                 loss_info = f"\n\nCurrent performance. Loss: {current_loss:.3f}"
         
-        instruction = f"""You are a prompt engineering expert. Your task is to generate {self.num_variations} improved variations of this prompt.
+        instruction = f"""You are a prompt engineering expert. Generate {self.num_variations} improved variations of the following prompt.
 
-Current Prompt:
+ORIGINAL PROMPT:
 "{prompt}"
 
-Iteration: {iteration}{loss_info}
+TASK: Create {self.num_variations} complete, ready-to-use prompt variations. Each should:
+- Be a complete prompt (not a description or meta-comment)
+- Keep the same core task
+- Add clarifications, structure, or instructions to improve results
+- Be different from the others
 
-Generate {self.num_variations} variations that are:
-1. Clearer and more specific
-2. More likely to produce accurate results
-3. Different from each other (explore different strategies)
+IMPORTANT: Output ONLY the actual prompts, one per line. Do NOT explain, number, or describe them.
 
-Guidelines:
-- Keep the core task the same
-- Add clarifying instructions
-- Improve structure and formatting
-- Make it more actionable
+EXAMPLE FORMAT:
+Classify sentiment of the text as positive, negative, or neutral. Be precise.
+Determine if the following text expresses positive, negative, or neutral sentiment.
+Analyze the sentiment: output only positive, negative, or neutral.
 
-Output ONLY the {self.num_variations} variations, one per line, starting with "VARIATION:"
-Do not include explanations or numbering."""
+NOW GENERATE {self.num_variations} VARIATIONS:"""
         
         return instruction
     
@@ -108,22 +107,32 @@ Do not include explanations or numbering."""
         """Call the mutator agent to generate variations."""
         response = self.mutator_fn(instruction)
         
-        # Parse variations from response
+        # Parse variations - each non-trivial line is a variation
         variations = []
-        for line in response.split('\n'):
-            line = line.strip()
-            if line.startswith('VARIATION:'):
-                variation = line.replace('VARIATION:', '').strip()
-                if variation:
-                    variations.append(variation)
+        lines = response.split('\n')
         
-        # Fallback: treat each non-empty line as a variation
-        if not variations:
-            variations = [
-                line.strip() 
-                for line in response.split('\n') 
-                if line.strip() and len(line.strip()) > 10
-            ]
+        for line in lines:
+            line = line.strip()
+            
+            # Skip empty lines
+            if not line:
+                continue
+            
+            # Skip lines that are clearly not prompts (too short, or meta-comments)
+            if len(line) < 15:
+                continue
+            
+            # Skip numbered prefixes like "1.", "2.", "VARIATION:", etc
+            cleaned = line
+            # Remove common prefixes
+            for prefix in ['VARIATION:', 'VARIATION', '1.', '2.', '3.', '1)', '2)', '3)', '-', '*', '•']:
+                if cleaned.startswith(prefix):
+                    cleaned = cleaned[len(prefix):].strip()
+                    break
+            
+            # If it's substantial, keep it
+            if cleaned and len(cleaned) > 15:
+                variations.append(cleaned)
         
         return variations[:self.num_variations * 2]  # Generate extra for filtering
     
