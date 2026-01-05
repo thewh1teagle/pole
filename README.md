@@ -4,6 +4,8 @@ Optimize prompts like you'd train a model, but without the weights.
 
 Instead of gradient descent, use search. Define what "better" means (your loss function), and pole finds prompts that score lower. Plug in any mutation strategy: simple rules, LLM agents, RAG, evolutionary search, or scrape the web for prompt techniques.
 
+> Like [DSPy](https://github.com/stanfordnlp/dspy), but simpler and truly headless. No dependencies, no magic.
+
 ## How it works
 
 1. **You provide**: a model to test, a loss function, and test cases
