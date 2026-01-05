@@ -1,34 +1,33 @@
 # pole
 
-Prompt optimization via iterative mutation and evaluation.
+Optimize prompts like you'd train a model, but without the weights.
 
-Trainer for prompts, not weights. Finds better prompts through search instead of gradient descent. Plug in your mutation strategy: heuristics, LLM agents, RAG, evolutionary algorithms, or web search.
+Instead of gradient descent, use search. Define what "better" means (your loss function), and pole finds prompts that score lower. Plug in any mutation strategy: simple rules, LLM agents, RAG, evolutionary search, or scrape the web for prompt techniques.
 
-## Usage
+## How it works
 
-See `examples/` directory for complete working examples:
-- `basic_example.py` - Minimal example with placeholder model
-- `sentiment/` - Sentiment classification with Ollama
-- `g2p/` - Hebrew phoneme conversion (advanced)
+1. **You provide**: a model to test, a loss function, and test cases
+2. **pole does**: mutate prompt → evaluate on test cases → keep what works → repeat
+3. **You get**: the best prompt and full optimization history
 
-Run with:
+Silent by default. Opt-in to progress logging.
+
+## Examples
+
 ```bash
-uv run examples/basic_example.py
+uv run examples/basic_example.py      # Minimal placeholder
+uv run examples/sentiment/            # Sentiment with AgentMutator
+uv run examples/g2p/                  # Hebrew→IPA (advanced)
 ```
 
-## Features
+See `examples/` for complete code.
 
-- **No dependencies** - Bring your own LLM and metrics
-- **Silent by default** - Opt-in to progress reporting
-- **Loss-driven** - Evaluates all variations before selecting best
-- **Full history** - Saves all iterations to JSON
+## API
 
-## Architecture
-
-Three core components:
-- **PromptOptimizer** - Main loop with convergence logic
-- **PromptMutator** - Generates variations (built-in or custom)
-- **ProgressReporter** - Optional logging (silent by default)
+Three core pieces:
+- `PromptOptimizer` - main loop with convergence logic
+- `PromptMutator` - generates variations (or write your own)
+- `ConsoleReporter` - optional logging
 
 ## License
 
