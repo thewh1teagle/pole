@@ -34,7 +34,7 @@ def sentiment_loss(predicted: str, expected: str) -> float:
 
 def main():
     # Choose dataset: "small", "medium", or "challenging"
-    dataset_name = "small"  # Change this to test different datasets
+    dataset_name = "challenging"  # Change this to test different datasets
     dataset = get_dataset(dataset_name)
 
     print("="*70)
