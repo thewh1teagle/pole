@@ -82,32 +82,62 @@ class AgentMutator:
             else:
                 loss_info = f"\nCurrent error rate: {current_loss:.3f}"
 
-        instruction = f"""You are a prompt engineering expert. Your task is to improve this prompt by generating {self.num_variations} better variations.
+        instruction = f"""Generate {self.num_variations} improved versions of this prompt.
 
-CURRENT PROMPT (preserve the core task and format):
-\"\"\"
-{prompt}
-\"\"\"{loss_info}
+CURRENT PROMPT:
+{prompt}{loss_info}
 
-TASK: Generate {self.num_variations} COMPLETE, IMPROVED versions of the above prompt.
+RULES:
+1. Keep the EXACT same task/goal
+2. Keep the EXACT same output format (one word answers if original expects that)
+3. NO explanations or justifications unless original has them
+4. Make SMALL improvements only
+5. Output ONLY the prompts themselves - NO meta-text, NO labels, NO commentary
 
-Requirements:
-- Keep the EXACT same task/goal
-- Keep the same output format requirements
-- Add helpful clarifications or examples
-- Improve wording for clarity
-- Make small, focused improvements (don't change the whole approach)
+Separate each prompt with "---" on its own line.
 
-Output format: Write each complete prompt on its own, separated by blank lines.
-Do NOT add labels like "Variation 1:" or explanations.
-Output ONLY the {self.num_variations} complete prompts."""
+WRONG (DO NOT DO THIS):
+Here are the prompts:
+1. First prompt here...
+2. Second prompt here...
+
+CORRECT (DO THIS):
+Classify the sentiment as positive, negative, or neutral. Be concise.
+
+---
+
+Determine sentiment: positive, negative, or neutral. One word only.
+
+---
+
+Analyze text sentiment. Reply with: positive, negative, or neutral.
+
+Now write {self.num_variations} prompts in the CORRECT format (prompts only, separated by ---):"""
 
         return instruction
 
     def _generate_variations(self, instruction: str) -> list[str]:
         response = self.mutator_fn(instruction)
 
-        # Split by double newlines to get distinct prompts
+        # Split by "---" delimiter first (new format)
+        if '---' in response:
+            parts = response.split('---')
+            variations = []
+            for part in parts:
+                part = part.strip()
+                if part and len(part) > MIN_VARIATION_LENGTH:
+                    # Clean any remaining markdown
+                    part = part.replace('**', '').replace('```', '').strip()
+                    # Skip if it looks like meta-text
+                    if not any(part.lower().startswith(skip) for skip in [
+                        'here are', 'here is', 'variation', 'example:', 'prompt:'
+                    ]):
+                        variations.append(part)
+
+            if variations:
+                return variations[:self.num_variations * VARIATION_GENERATION_MULTIPLIER]
+
+        # Fallback: old parsing method
         variations = []
         parts = response.split('\n\n')
 
@@ -120,8 +150,8 @@ Output ONLY the {self.num_variations} complete prompts."""
             # Remove common prefixes
             for prefix in ['VARIATION:', 'VARIATION', '1.', '2.', '3.', '1)', '2)', '3)',
                           'Prompt:', 'Prompt 1:', 'Prompt 2:', 'Prompt 3:',
-                          '**Variation', '*Variation', 'Example:']:
-                if part.startswith(prefix):
+                          '**Variation', '*Variation', 'Example:', 'Here are', 'Here is']:
+                if part.upper().startswith(prefix.upper()):
                     newline_idx = part.find('\n')
                     if newline_idx != -1:
                         part = part[newline_idx+1:].strip()
@@ -133,9 +163,11 @@ Output ONLY the {self.num_variations} complete prompts."""
             part = part.replace('**', '').replace('*', '').replace('```', '')
 
             if part and len(part) > MIN_VARIATION_LENGTH:
-                variations.append(part)
+                # Skip if still looks like meta-text
+                if not any(part.lower().startswith(skip) for skip in ['here are', 'here is']):
+                    variations.append(part)
 
-        # Fallback: split by single newlines if nothing found
+        # Final fallback: split by single newlines if nothing found
         if not variations:
             lines = response.split('\n')
             current = []

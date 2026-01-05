@@ -7,17 +7,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from _utils import create_ollama_model, create_agent_mutator_funcs
 from pole import PromptOptimizer, AgentMutator, ConsoleReporter
-
-
-DATASET = [
-    ("This movie was absolutely amazing!", "positive"),
-    ("Worst experience ever, total waste of time.", "negative"),
-    ("The product works fine, nothing special.", "neutral"),
-    ("I love this so much! Best purchase ever!", "positive"),
-    ("Terrible quality, very disappointed.", "negative"),
-    ("It's okay, does what it says.", "neutral"),
-    ("Incredible! Exceeded all my expectations!", "positive"),
-]
+from dataset import get_dataset
 
 
 def sentiment_loss(predicted: str, expected: str) -> float:
@@ -43,10 +33,15 @@ def sentiment_loss(predicted: str, expected: str) -> float:
 
 
 def main():
+    # Choose dataset: "small", "medium", or "challenging"
+    dataset_name = "small"  # Change this to test different datasets
+    dataset = get_dataset(dataset_name)
+
     print("="*70)
     print("Sentiment Optimization with AgentMutator")
     print("="*70)
-    print(f"\nDataset size: {len(DATASET)} examples")
+    print(f"\nDataset: {dataset_name.upper()}")
+    print(f"Dataset size: {len(dataset)} examples")
     print("Model: gemma3:270m")
     print("Mutator: gemma3:1b (LLM-powered)\n")
 
@@ -71,15 +66,15 @@ def main():
         model=model,
         loss_fn=sentiment_loss,
         mutator=mutator,
-        max_iterations=5,
-        patience=3,
+        max_iterations=10,
+        patience=5,
         output_dir="output/agent_sentiment/",
         reporter=ConsoleReporter()
     )
 
     result = optimizer.optimize(
         initial_prompt="Classify the sentiment as positive, negative, or neutral.",
-        test_cases=DATASET
+        test_cases=dataset
     )
 
     print("\n" + "="*70)
