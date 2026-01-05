@@ -42,16 +42,15 @@ def main():
     print("="*70)
     print(f"\nDataset: {dataset_name.upper()}")
     print(f"Dataset size: {len(dataset)} examples")
-    print("Model: gemma3:270m")
+    print("Model: gemma3:1b")
     print("Mutator: gemma3:1b (LLM-powered)\n")
 
     try:
-        model = create_ollama_model("gemma3:270m", temperature=0.1, num_predict=10)
+        model = create_ollama_model("gemma3:1b", temperature=0.1, num_predict=10)
         mutator_fn, verifier_fn = create_agent_mutator_funcs("gemma3:1b")
     except Exception as e:
         print(f"ERROR: {e}")
-        print("Make sure ollama is running and models are downloaded:")
-        print("  ollama pull gemma3:270m")
+        print("Make sure ollama is running and model is downloaded:")
         print("  ollama pull gemma3:1b")
         sys.exit(1)
 
